@@ -588,13 +588,8 @@ plot.absCN <- function(seg.data, chromnum=1, rawdata=NULL, chromvar='chrom', loc
 		stop("ERROR: The input dataset must include all the named columns in order: chrom, loc.start, loc.end, r, CN.")
 	}
 
-	#if(!(chromnum %in% 1:22)) {
-	#	stop("ERROR: chromosome number must be from 1 to 22.")
-	#}
-
 	segs=subset(seg.data, chrom==chromnum)
-	par(xpd=NA,oma=c(2,1,3,1))
-	
+
 	lty=c(1,1)
 	col=c('blue','red')
 	lwd=c(4,4)
