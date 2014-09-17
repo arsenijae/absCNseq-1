@@ -578,7 +578,7 @@ run.absCNSeq <- function(seg.fn, snv.fn=NULL, res.dir, smp.name, seq.type=c("WES
 }
 
 
-plot.absCN <- function(seg.data, chromnum=1, rawdata=NULL, chromvar='chrom', loc.start='chr_start', loc.end='chr_stop', normalized.ratio='log2_ratio'){
+plot.absCN <- function(seg.data, chromnum=1, rawdata=NULL, chromvar='chrom', loc.start='chr_start', loc.end='chr_stop', normalized.ratio='log2_ratio', ...){
 
 	# check the format of input data
 	seg.in.col <- colnames(seg.data)
@@ -598,7 +598,6 @@ plot.absCN <- function(seg.data, chromnum=1, rawdata=NULL, chromvar='chrom', loc
 	lty=c(1,1)
 	col=c('blue','red')
 	lwd=c(4,4)
-	ylim=c(0,8)
 	legtxt=c('2Xraw copy ratio','estimated integer CN')
 	
 	if (!is.null(rawdata)){
@@ -609,11 +608,11 @@ plot.absCN <- function(seg.data, chromnum=1, rawdata=NULL, chromvar='chrom', loc
 			
 		raw=subset(rawdata, chrom==chromnum)
 		plot(raw[,'chr_start'], 2*2^(raw$log2_ratio),  xlab='Position', sub=paste('chr',chromnum,sep=''), ylab='Copy Ratio/Number',col='green', cex=.1, axes=F, 
-			xlim=c(min(raw[,'chr_start'],na.rm=T),max(raw[,'chr_stop'],na.rm=T)), ylim=ylim) 
+			xlim=c(min(raw[,'chr_start'],na.rm=T),max(raw[,'chr_stop'],na.rm=T)), ...) 
 	}  else {
 
 		plot(segs[,"loc.start"], 2*segs[,"r"],  xlab='Position', sub=paste('chr',chromnum,sep=''), ylab='Copy Ratio/Number',col='green', cex=.1, axes=F, 
-			xlim=c(min(segs[,"loc.start"],na.rm=T),max(segs[,"loc.end"],na.rm=T)), ylim=ylim) 
+			xlim=c(min(segs[,"loc.start"],na.rm=T),max(segs[,"loc.end"],na.rm=T)), ...) 
 	}
 	box()
 	axis(1)
