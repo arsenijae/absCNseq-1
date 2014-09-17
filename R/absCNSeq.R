@@ -5,8 +5,8 @@ cluster.solution <- function(x, alpha.cut, tau.cut) {
 	cur.tau <- x[1,"tau.def"]
 	cur.cnt <- x[1,"count"]
 	cur.mse.r <- 1.0/x[1,"mse"]
-	clust <- data.frame(numeric(), numeric(), numeric(), numeric(), integer()) 
-	
+	clust <- data.frame(numeric(), numeric(), numeric(), numeric(), integer())
+
 	for(i in 2:nrow(x)) {
 		next.alpha <- x[i,"alpha"]
 		next.tau <- x[i,"tau.def"]
@@ -16,14 +16,14 @@ cluster.solution <- function(x, alpha.cut, tau.cut) {
 			# update: weighted average
 			cur.wt <- cur.cnt/(cur.cnt+next.cnt)
 			next.wt <- next.cnt/(cur.cnt+next.cnt)
-			cur.alpha <- (cur.alpha*cur.wt*cur.mse.r + next.alpha*next.wt*next.mse.r) /(cur.wt*cur.mse.r + next.wt*next.mse.r) 
+			cur.alpha <- (cur.alpha*cur.wt*cur.mse.r + next.alpha*next.wt*next.mse.r) /(cur.wt*cur.mse.r + next.wt*next.mse.r)
 			cur.tau <- (cur.tau*cur.wt*cur.mse.r + next.tau*next.wt*next.mse.r) /(cur.wt*cur.mse.r + next.wt*next.mse.r)
 			cur.mse.r <- cur.mse.r*cur.wt + next.mse.r*next.wt
 			cur.cnt <- cur.cnt + next.cnt
 		} else {
 			# save the current cluster
 			clust <- rbind(clust, data.frame(cur.alpha, cur.tau, cur.tau, cur.mse.r, cur.cnt))
-			
+
 			cur.alpha <- next.alpha
 			cur.tau <- next.tau
 			cur.cnt <- next.cnt
@@ -34,10 +34,10 @@ cluster.solution <- function(x, alpha.cut, tau.cut) {
 	colnames(clust) <- c("alpha", "tau", "tau.def", "mse", "count")
 	clust[,1:3] <- round(clust[,1:3], 2)
 	clust$mse <- 1.0/clust$mse
-	
+
 	#print(x)
 	#print(clust)
-	
+
 	clust
 }
 
@@ -48,10 +48,10 @@ grid.search.alpha <- function(seg.data, snv.data, alpha.min=0.2, alpha.max=1.0, 
 		cat("qmax=",qmax,"\n")
 		cat("lamda=",lamda,"\n")			# 1.0: CN only
 	}
-	
+
 	orig.seg.dat <- seg.data
-	
-	# filtering 
+
+	# filtering
 	seg.data <- na.omit(seg.data)
 	n.seg.1 <- nrow(seg.data)
 	seg.data <- seg.data[seg.data[,"eff.seg.len"]>=min.seg.len,]
@@ -83,7 +83,7 @@ grid.search.alpha <- function(seg.data, snv.data, alpha.min=0.2, alpha.max=1.0, 
 	fb <- NULL
 	het.ind <- NULL 
 	for(i in 1:nrow(snv.data)) {
-		ind <- which(seg.data[,"chrom"]==snv.data[i,"chrom"] & seg.data[,"loc.start"]<=snv.data[i,"position"] & seg.data[,"loc.end"]>=snv.data[i,"position"])
+		ind <- which(seg.data[,"chrom"]==snv.data[i,"Chromosome"] & seg.data[,"loc.start"]<=snv.data[i,"Start_Position"] & seg.data[,"loc.end"]>=snv.data[i,"Start_Position"])
 		if(length(ind)==1) {
 			if(r[ind] <= max.r.cutoff & r[ind] >= min.r.cutoff) {
 				snp2seg <- c(snp2seg, ind)
@@ -523,7 +523,10 @@ compute.absCN <- function(seg.data, alpha.opt, tau.opt, qmax=7) {
 
 
 run.absCNSeq <- function(seg.fn, snv.fn=NULL, res.dir, smp.name, seq.type=c("WES","WGS"), alpha.min=0.2, alpha.max=1.0, tau.min=1.5, tau.max=5.0, min.sol.freq=0, min.seg.len=0, qmax=7, lamda=0.5, verbose=FALSE) {
-
+  require(data.table)
+  if(missing(smp.name)){
+    stop("smp.name has to be set")
+  }
 	dir.create(res.dir, showWarnings = FALSE)
 	
 	if(!is.null(seg.fn) & file.exists(seg.fn)) {
@@ -555,17 +558,21 @@ run.absCNSeq <- function(seg.fn, snv.fn=NULL, res.dir, smp.name, seq.type=c("WES
 		res.list <- grid.search.alpha.simple(seg.data, alpha.min, alpha.max, tau.min, tau.max, min.sol.freq, min.seg.len, qmax, verbose)
 	} else {
 		if(file.exists(snv.fn)) {
-			snv.data <- read.table(snv.fn, header=TRUE, sep="\t", stringsAsFactors=FALSE)
+			#snv.data <- read.table(snv.fn, header=TRUE, sep="\t", stringsAsFactors=FALSE)
+		  snv.data <- fread(snv.fn)
+      #snv.data$chrom <- snv.data$Chromosome
+      #snv.data$position <- snv.data$Start_Position
+      snv.data$tumor_var_freq <- snv.data$t_alt_count / (snv.data$t_alt_count+snv.data$t_ref_count)
 		} else {
 			stop("ERROR: The input SNV file does not exist.")
 		}
 		
 		# check the format of SNV file
 		snv.in.col <- colnames(snv.data)
-		snv.req.col <- c("chrom",  "position", "tumor_var_freq")
+		snv.req.col <- c("Chromosome",  "Start_Position", "tumor_var_freq")
 		tmp <- setdiff(snv.req.col, snv.in.col)
 		if(length(tmp)>0) {
-			stop("ERROR: The input SNV file must include all the named columns in order: chrom, position, tumor_var_freq.")
+			stop("ERROR: The input MAF file must include columns Chromosome, Start_Position, t_alt_count and t_ref_count")
 		}
 		
 		res.list <- grid.search.alpha(seg.data, snv.data, alpha.min, alpha.max, tau.min, tau.max, min.sol.freq, min.seg.len, qmax, lamda, verbose)
